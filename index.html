@@ -22,8 +22,19 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border-bottom:1p
 @media(max-width:1000px){.grid{grid-template-columns:repeat(2,1fr)}.metrics{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.grid,.metrics{grid-template-columns:1fr}.header{align-items:flex-start;flex-direction:column}table{font-size:12px}.card{padding:13px;overflow:auto}}
 @media print{header,.tabs,.no-print,button{display:none!important}.view{display:block!important}.card{box-shadow:none;border:0}.view:not(.active){display:none!important}}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+<div id="authGate" style="position:fixed;inset:0;background:rgba(15,45,77,.96);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div class="card" style="width:min(460px,100%);margin:0">
+    <div class="section-title"><h2>🔐 دخول نظام إنهاء الخدمة</h2></div>
+    <div class="notice">البيانات محفوظة الآن على قاعدة بيانات Supabase ولا يمكن الوصول إليها إلا بعد تسجيل الدخول.</div>
+    <div class="field" style="margin-top:14px"><label>البريد الإلكتروني</label><input id="authEmail" type="email" autocomplete="username"></div>
+    <div class="field" style="margin-top:12px"><label>كلمة المرور</label><input id="authPassword" type="password" autocomplete="current-password"></div>
+    <div class="actions-mini" style="margin-top:14px"><button class="green" onclick="signIn()">دخول</button><button class="gray" onclick="signUp()">إنشاء حساب</button></div>
+    <div id="authMsg" class="small" style="margin-top:12px"></div>
+  </div>
+</div>
 <header><div class="header"><div class="brand"><h1>لوحة متابعة إنهاء خدمة الموظفين</h1><p>إدارة الموارد البشرية — استقالة / إنهاء خدمة / انتهاء عقد</p></div><div class="actions"><button class="primary" onclick="newEmployee()">+ ملف إنهاء خدمة</button><button class="primary" onclick="saveCurrent()">حفظ</button><button class="primary" onclick="window.print()">طباعة</button></div></div></header>
 <main>
 <div class="tabs no-print"><button class="tab active" onclick="showView('dashboard',this)">📊 Dashboard</button><button class="tab" onclick="showView('employee',this)">👤 ملف الموظف</button><button class="tab" onclick="showView('checklist',this)">☑️ Checklist</button><button class="tab" onclick="showView('records',this)">📁 السجلات المحفوظة</button></div>
@@ -71,6 +82,10 @@ const tasks=[
 ['الإجراء النهائي','استكمال جميع توقيعات إخلاء الطرف'],['الإجراء النهائي','التأكد من إلغاء البصمة'],['الإجراء النهائي','التأكد من إلغاء الحسابات الإلكترونية'],['الإجراء النهائي','التأكد من تسوية جميع العهد'],['الإجراء النهائي','التأكد من تسوية المستحقات'],['الإجراء النهائي','إصدار شهادة الخبرة'],['الإجراء النهائي','أرشفة كامل ملف إنهاء الخدمة'],['الإجراء النهائي','اعتماد إغلاق ملف الموظف']
 ];
 let current=null;
+let cloudRecords=[];let authUser=null;let saveTimer=null;
+const SUPABASE_URL="https://pdkdvaisggntdrvpxuur.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY="sb_publishable_S-xxocuLz-FX_6HLaYhb0A_Avnr01AW";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const key='hr_exit_service_records_v1';
 const sections=[...new Set(tasks.map(x=>x[0]))];
 function blankTask(){return tasks.map(([section,title])=>({section,title,status:'لم يتم',date:'',owner:'',note:''}))}
@@ -84,9 +99,17 @@ function normalizeRecord(r){
  return r;
 }
 function newEmployee(){current={id:crypto.randomUUID(),name:'',empNo:'',job:'',dept:'',manager:'',startDate:'',type:'استقالة',requestDate:'',lastDate:'',hr:'',processDate:new Date().toISOString().slice(0,10),fileStatus:'قيد الإجراء',notes:'',fingerDate:'',fingerTime:'',fingerBy:'',doors:'لا',cardAccess:'لا',lastAccess:'لا',tasks:blankTask(),updatedAt:new Date().toISOString()};loadForm();renderTasks();showView('employee',document.querySelectorAll('.tab')[1]);}
-function records(){return JSON.parse(localStorage.getItem(key)||'[]').map(normalizeRecord)}
-function setRecords(v){localStorage.setItem(key,JSON.stringify(v.map(normalizeRecord)))}
-function saveCurrent(){if(!current){newEmployee();return}readForm();current=normalizeRecord(current);current.updatedAt=new Date().toISOString();let a=records(),i=a.findIndex(x=>x.id===current.id);if(i<0)a.push(current);else a[i]=current;setRecords(a);renderAll();alert('تم حفظ ملف إنهاء الخدمة وجميع الإجراءات الخاصة به بنجاح');}
+function rowToRecord(row){return normalizeRecord({id:row.id,name:row.name,empNo:row.emp_no,job:row.job,dept:row.dept,manager:row.manager,startDate:row.start_date||'',type:row.termination_type,requestDate:row.request_date||'',lastDate:row.last_date||'',hr:row.hr,processDate:row.process_date||'',fileStatus:row.file_status,notes:row.notes,fingerDate:row.finger_date||'',fingerTime:row.finger_time||'',fingerBy:row.finger_by,doors:row.doors,cardAccess:row.card_access,lastAccess:row.last_access,tasks:Array.isArray(row.tasks)?row.tasks:[],created_by:row.created_by,updatedAt:row.updated_at||new Date().toISOString()})}
+function recordToRow(r){return {id:r.id,name:r.name||'',emp_no:r.empNo||'',job:r.job||'',dept:r.dept||'',manager:r.manager||'',start_date:r.startDate||null,termination_type:r.type||'استقالة',request_date:r.requestDate||null,last_date:r.lastDate||null,hr:r.hr||'',process_date:r.processDate||null,file_status:r.fileStatus||'قيد الإجراء',notes:r.notes||'',finger_date:r.fingerDate||null,finger_time:r.fingerTime||null,finger_by:r.fingerBy||'',doors:r.doors||'لا',card_access:r.cardAccess||'لا',last_access:r.lastAccess||'لا',tasks:normalizeRecord(r).tasks,created_by:r.created_by||authUser?.id,updated_at:r.updatedAt||new Date().toISOString()}}
+function records(){return cloudRecords.map(normalizeRecord)}
+function setRecords(v){cloudRecords=v.map(normalizeRecord)}
+async function loadRemoteRecords(){if(!authUser)return;const {data,error}=await db.from('exit_service_records').select('*').order('updated_at',{ascending:false});if(error){console.error(error);alert('تعذر تحميل سجلات إنهاء الخدمة: '+error.message);return}cloudRecords=(data||[]).map(rowToRecord);const local=JSON.parse(localStorage.getItem(key)||'[]').map(normalizeRecord);if(!cloudRecords.length&&local.length){const rows=local.map(r=>recordToRow({...r,created_by:authUser.id}));const {data:uploaded,error:uploadError}=await db.from('exit_service_records').upsert(rows).select('*');if(!uploadError){cloudRecords=(uploaded||[]).map(rowToRecord);localStorage.removeItem(key);alert('تم نقل السجلات القديمة من المتصفح إلى قاعدة البيانات بنجاح.')}else console.error(uploadError)}renderAll()}
+async function persistCurrent(showAlert=false){if(!current||!authUser)return false;current=normalizeRecord(current);current.updatedAt=new Date().toISOString();current.created_by=current.created_by||authUser.id;const {data,error}=await db.from('exit_service_records').upsert(recordToRow(current)).select('*').single();if(error){console.error(error);if(showAlert)alert('تعذر الحفظ: '+error.message);return false}const saved=rowToRecord(data),i=cloudRecords.findIndex(x=>x.id===saved.id);if(i<0)cloudRecords.unshift(saved);else cloudRecords[i]=saved;current=saved;renderDashboard();renderRecords();renderProgress();renderTasks();if(showAlert)alert('تم حفظ ملف إنهاء الخدمة وجميع الإجراءات في قاعدة البيانات بنجاح');return true}
+async function signIn(){const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value,msg=document.getElementById('authMsg');msg.textContent='جارٍ تسجيل الدخول...';const {error}=await db.auth.signInWithPassword({email,password});msg.textContent=error?error.message:'تم تسجيل الدخول'}
+async function signUp(){const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value,msg=document.getElementById('authMsg');if(password.length<6){msg.textContent='كلمة المرور يجب ألا تقل عن 6 أحرف.';return}const {data,error}=await db.auth.signUp({email,password});msg.textContent=error?error.message:(data.session?'تم إنشاء الحساب وتسجيل الدخول.':'تم إنشاء الحساب. إذا طُلب تأكيد البريد، راجع بريدك الإلكتروني ثم سجّل الدخول.')}
+async function signOut(){await db.auth.signOut();authUser=null;cloudRecords=[];current=null;document.getElementById('authGate').style.display='flex';renderAll()}
+async function initAuth(){const {data:{session}}=await db.auth.getSession();if(session?.user){authUser=session.user;document.getElementById('authGate').style.display='none';await loadRemoteRecords();if(!current)newEmployee()}else document.getElementById('authGate').style.display='flex';db.auth.onAuthStateChange(async (_event,session)=>{if(session?.user){authUser=session.user;document.getElementById('authGate').style.display='none';await loadRemoteRecords();if(!current)newEmployee()}else{authUser=null;cloudRecords=[];current=null;document.getElementById('authGate').style.display='flex';renderAll()}})}
+async function saveCurrent(){if(!current){newEmployee();return}readForm();await persistCurrent(true)}
 function readForm(){const ids=['name','empNo','job','dept','manager','startDate','type','requestDate','lastDate','hr','processDate','fileStatus','notes','fingerDate','fingerTime','fingerBy','doors','cardAccess','lastAccess'];ids.forEach(id=>current[id]=document.getElementById(id).value)}
 function loadForm(){if(!current)return;current=normalizeRecord(current);['name','empNo','job','dept','manager','startDate','type','requestDate','lastDate','hr','processDate','fileStatus','notes','fingerDate','fingerTime','fingerBy','doors','cardAccess','lastAccess'].forEach(id=>document.getElementById(id).value=current[id]||'');document.getElementById('recordId').textContent='رقم الملف: '+current.id.slice(0,8);renderTasks()}
 function loadRecord(id){current=normalizeRecord(records().find(x=>x.id===id));loadForm();showView('employee',document.querySelectorAll('.tab')[1])}
@@ -102,12 +125,12 @@ function taskChange(i,v){current=normalizeRecord(current);current.tasks[i].statu
 function taskField(i,k,v){current=normalizeRecord(current);current.tasks[i][k]=v;autoSave()}
 function markAll(v){if(!current){alert('افتح أو أنشئ ملف موظف أولاً');return}current.tasks.forEach(t=>t.status=v);renderTasks();autoSave()}
 function renderProgress(){if(!current)return;let c=calc(current);const html='<div class="'+(c.complete?'notice success':'notice')+'"><b>'+(c.complete?'🟢 إخلاء الطرف مكتمل':'🔴 إخلاء الطرف غير مكتمل')+'</b> — '+c.done+' من '+c.total+' مهام ('+c.pct+'%)<div class="progress" style="margin-top:10px"><div class="bar" style="width:'+c.pct+'%"></div></div></div>';progressBox.innerHTML=html;if(document.getElementById('employeeProgress'))employeeProgress.innerHTML=html}
-function autoSave(){if(!current)return;current=normalizeRecord(current);current.updatedAt=new Date().toISOString();let a=records(),i=a.findIndex(x=>x.id===current.id);if(i<0)a.push(current);else a[i]=current;setRecords(a);renderDashboard();renderRecords()}
+function autoSave(){if(!current||!authUser)return;current=normalizeRecord(current);current.updatedAt=new Date().toISOString();clearTimeout(saveTimer);saveTimer=setTimeout(()=>persistCurrent(false),450);renderDashboard();renderRecords()}
 function renderRecords(){let a=records();recordsList.innerHTML=a.length?a.map(r=>{let c=calc(r);return '<div class="card" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b>'+esc(r.name||'بدون اسم')+'</b> — '+esc(r.empNo||'بدون رقم')+'<div class="small">'+esc(r.type)+' | آخر يوم: '+esc(r.lastDate||'-')+' | آخر تحديث: '+new Date(r.updatedAt).toLocaleString('ar-SA')+'</div></div><div class="actions-mini"><button class="gray" onclick="loadRecord(\\''+r.id+'\\')">فتح</button><button class="red" onclick="deleteRecord(\\''+r.id+'\\')">حذف</button></div></div><div style="margin-top:10px"><div class="progress"><div class="bar" style="width:'+c.pct+'%"></div></div><span class="small">'+c.pct+'% — '+c.done+' من '+c.total+' إجراء</span></div></div>'}).join(''):'<div class="empty">لا توجد سجلات محفوظة.</div>'}
-function deleteRecord(id){if(!confirm('هل تريد حذف ملف إنهاء الخدمة؟'))return;setRecords(records().filter(r=>r.id!==id));if(current?.id===id)current=null;renderAll()}
-function deleteAll(){if(confirm('سيتم حذف جميع السجلات المحفوظة من هذا المتصفح. هل أنت متأكد؟')){localStorage.removeItem(key);current=null;renderAll()}}
+async function deleteRecord(id){if(!confirm('هل تريد حذف ملف إنهاء الخدمة؟'))return;const {error}=await db.from('exit_service_records').delete().eq('id',id);if(error){alert('تعذر حذف الملف: '+error.message);return}cloudRecords=cloudRecords.filter(r=>r.id!==id);if(current?.id===id)current=null;renderAll()}
+async function deleteAll(){if(!authUser||!confirm('سيتم حذف جميع سجلات إنهاء الخدمة الخاصة بحسابك من قاعدة البيانات. هل أنت متأكد؟'))return;const {error}=await db.from('exit_service_records').delete().eq('created_by',authUser.id);if(error){alert('تعذر حذف السجلات: '+error.message);return}cloudRecords=[];current=null;renderAll()}
 function renderAll(){renderDashboard();renderRecords();renderTasks()}
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}function escAttr(s){return esc(s).replace(/'/g,'&#39;')}
-renderAll();if(!current)newEmployee();
+renderAll();initAuth();
 </script>
 </body></html>
