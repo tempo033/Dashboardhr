@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>لوحة إنهاء خدمة الموظفين | HR</title>
+<style>
+:root{--navy:#17365d;--blue:#1f4e78;--bg:#f4f7fb;--card:#fff;--muted:#64748b;--green:#16a34a;--red:#dc2626;--orange:#ea580c;--border:#e2e8f0}
+*{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:#172033}
+header{background:linear-gradient(135deg,#17365d,#1f4e78);color:#fff;padding:22px 28px;position:sticky;top:0;z-index:10;box-shadow:0 4px 16px #0002}
+.header{max-width:1400px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:20px}.brand h1{margin:0;font-size:24px}.brand p{margin:6px 0 0;opacity:.8}
+.actions{display:flex;gap:8px;flex-wrap:wrap}button{border:0;border-radius:9px;padding:10px 15px;font-weight:700;cursor:pointer}button.primary{background:#fff;color:var(--blue)}button.dark{background:#0f2d4d;color:#fff}button.green{background:var(--green);color:#fff}button.red{background:var(--red);color:#fff}button.gray{background:#e2e8f0;color:#172033}
+main{max-width:1400px;margin:24px auto;padding:0 18px}.tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}.tab{background:#fff;color:var(--blue);border:1px solid var(--border)}.tab.active{background:var(--blue);color:#fff}
+.view{display:none}.view.active{display:block}.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:0 3px 12px #17365d0b;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}.field textarea{min-height:80px}
+.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}.metric{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px}.metric .label{color:var(--muted);font-size:13px}.metric .value{font-size:28px;font-weight:800;margin-top:7px}.metric.green{border-right:5px solid var(--green)}.metric.red{border-right:5px solid var(--red)}.metric.blue{border-right:5px solid var(--blue)}.metric.orange{border-right:5px solid var(--orange)}
+table{width:100%;border-collapse:collapse;background:#fff}th,td{border-bottom:1px solid var(--border);padding:10px;text-align:right;vertical-align:middle}th{background:#eef4f9;color:var(--navy);font-size:13px}tr:hover td{background:#fafcff}.status{padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700;display:inline-block}.done{background:#dcfce7;color:#166534}.pending{background:#fee2e2;color:#991b1b}.na{background:#e5e7eb;color:#374151}
+.progress{height:12px;background:#e5e7eb;border-radius:20px;overflow:hidden}.bar{height:100%;background:var(--green);transition:.2s}
+.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.section-title h2{margin:0;font-size:18px}.small{font-size:12px;color:var(--muted)}
+.notice{padding:13px;border-radius:10px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}.success{background:#f0fdf4;color:#166534;border-color:#bbf7d0}
+.check{width:20px;height:20px}.actions-mini{display:flex;gap:6px;flex-wrap:wrap}.empty{text-align:center;color:var(--muted);padding:35px}
+@media(max-width:1000px){.grid{grid-template-columns:repeat(2,1fr)}.metrics{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.grid,.metrics{grid-template-columns:1fr}.header{align-items:flex-start;flex-direction:column}table{font-size:12px}.card{padding:13px;overflow:auto}}
+@media print{header,.tabs,.no-print,button{display:none!important}.view{display:block!important}.card{box-shadow:none;border:0}.view:not(.active){display:none!important}}
+</style>
+</head>
+<body>
+<header><div class="header"><div class="brand"><h1>لوحة متابعة إنهاء خدمة الموظفين</h1><p>إدارة الموارد البشرية — استقالة / إنهاء خدمة / انتهاء عقد</p></div><div class="actions"><button class="primary" onclick="newEmployee()">+ ملف إنهاء خدمة</button><button class="primary" onclick="saveCurrent()">حفظ</button><button class="primary" onclick="window.print()">طباعة</button></div></div></header>
+<main>
+<div class="tabs no-print"><button class="tab active" onclick="showView('dashboard',this)">📊 Dashboard</button><button class="tab" onclick="showView('employee',this)">👤 ملف الموظف</button><button class="tab" onclick="showView('checklist',this)">☑️ Checklist</button><button class="tab" onclick="showView('records',this)">📁 السجلات المحفوظة</button></div>
+
+<section id="dashboard" class="view active">
+<div class="metrics">
+<div class="metric blue"><div class="label">إجمالي ملفات الإنهاء</div><div class="value" id="mEmployees">0</div></div>
+<div class="metric green"><div class="label">ملفات مكتملة</div><div class="value" id="mComplete">0</div></div>
+<div class="metric red"><div class="label">ملفات قيد الإجراء</div><div class="value" id="mPending">0</div></div>
+<div class="metric orange"><div class="label">إجمالي المهام</div><div class="value" id="mTasks">0</div></div>
+<div class="metric blue"><div class="label">نسبة الإنجاز العامة</div><div class="value" id="mPercent">0%</div></div>
+</div>
+<div class="card"><div class="section-title"><h2>حالة الملفات</h2><span class="small">يتم الحفظ تلقائياً في المتصفح عند الضغط على حفظ</span></div>
+<table><thead><tr><th>الموظف</th><th>النوع</th><th>آخر يوم عمل</th><th>الإنجاز</th><th>الحالة</th><th class="no-print">إجراء</th></tr></thead><tbody id="dashRows"></tbody></table></div>
+<div class="card"><div class="section-title"><h2>المحاور</h2><span class="small">نسبة الإنجاز حسب القسم</span></div><div id="sections"></div></div>
+</section>
+
+<section id="employee" class="view">
+<div class="card"><div class="section-title"><h2>بيانات الموظف</h2><span id="recordId" class="small"></span></div>
+<div class="grid">
+<div class="field"><label>اسم الموظف</label><input id="name"></div><div class="field"><label>الرقم الوظيفي</label><input id="empNo"></div><div class="field"><label>المسمى الوظيفي</label><input id="job"></div><div class="field"><label>الإدارة / القسم</label><input id="dept"></div>
+<div class="field"><label>المدير المباشر</label><input id="manager"></div><div class="field"><label>تاريخ مباشرة العمل</label><input id="startDate" type="date"></div><div class="field"><label>نوع إنهاء الخدمة</label><select id="type"><option>استقالة</option><option>إنهاء خدمة</option><option>انتهاء عقد</option><option>أخرى</option></select></div><div class="field"><label>تاريخ الطلب / القرار</label><input id="requestDate" type="date"></div>
+<div class="field"><label>آخر يوم عمل</label><input id="lastDate" type="date"></div><div class="field"><label>مسؤول الموارد البشرية</label><input id="hr"></div><div class="field"><label>تاريخ بدء الإجراءات</label><input id="processDate" type="date"></div><div class="field"><label>حالة الملف</label><select id="fileStatus"><option>قيد الإجراء</option><option>مكتمل</option><option>متوقف</option></select></div>
+<div class="field" style="grid-column:1/-1"><label>ملاحظات عامة</label><textarea id="notes"></textarea></div>
+</div></div>
+<div class="card"><div class="section-title"><h2>حالة الدخول والبصمة</h2><span class="small">إجراء إلزامي قبل إغلاق الملف</span></div>
+<div class="grid"><div class="field"><label>تاريخ تعطيل البصمة</label><input id="fingerDate" type="date"></div><div class="field"><label>وقت تعطيل البصمة</label><input id="fingerTime" type="time"></div><div class="field"><label>مسؤول نظام البصمة</label><input id="fingerBy"></div><div class="field"><label>تم تعطيل جميع الأبواب؟</label><select id="doors"><option>لا</option><option>نعم</option></select></div><div class="field"><label>تم إلغاء بطاقة الدخول؟</label><select id="cardAccess"><option>لا</option><option>نعم</option></select></div><div class="field"><label>تمت مراجعة آخر دخول؟</label><select id="lastAccess"><option>لا</option><option>نعم</option></select></div></div></div>
+</section>
+
+<section id="checklist" class="view"><div class="card"><div class="section-title"><h2>Checklist إنهاء الخدمة</h2><div class="actions-mini no-print"><button class="green" onclick="markAll('تم')">تحديد الكل تم</button><button class="gray" onclick="markAll('لم يتم')">إرجاع الكل</button></div></div>
+<div id="progressBox"></div><div style="overflow:auto"><table><thead><tr><th>#</th><th>المحور</th><th>المهمة</th><th>الحالة</th><th>التاريخ</th><th>المسؤول</th><th>ملاحظات</th></tr></thead><tbody id="taskRows"></tbody></table></div></div></section>
+
+<section id="records" class="view"><div class="card"><div class="section-title"><h2>السجلات المحفوظة</h2><button class="red no-print" onclick="deleteAll()">حذف جميع السجلات</button></div><div id="recordsList"></div></div></section>
+</main>
+<script>
+const tasks=[
+['الموارد البشرية','استلام طلب الاستقالة / قرار إنهاء الخدمة'],['الموارد البشرية','مراجعة عقد العمل ومدة الإشعار'],['الموارد البشرية','التأكد من اعتماد الاستقالة / الإنهاء'],['الموارد البشرية','تحديد آخر يوم عمل رسمي'],['الموارد البشرية','إبلاغ المدير المباشر'],['الموارد البشرية','تحديث حالة الموظف في نظام HR'],['الموارد البشرية','إعداد إخلاء الطرف'],['الموارد البشرية','مراجعة رصيد الإجازات'],['الموارد البشرية','مراجعة السلف والخصومات'],['الموارد البشرية','إعداد شهادة الخبرة / الخدمة'],['الموارد البشرية','أرشفة مستندات الموظف'],['الموارد البشرية','إغلاق ملف الموظف'],
+['البصمة والأبواب','تعطيل بصمة الموظف'],['البصمة والأبواب','إلغاء صلاحية دخول الأبواب'],['البصمة والأبواب','إلغاء صلاحية المناطق المقيدة'],['البصمة والأبواب','استلام بطاقة الدخول'],['البصمة والأبواب','التأكد من عدم وجود بطاقة دخول فعالة'],['البصمة والأبواب','مراجعة آخر عملية دخول مسجلة'],['البصمة والأبواب','تسجيل تاريخ ووقت تعطيل البصمة'],
+['تقنية المعلومات','تعطيل البريد الإلكتروني'],['تقنية المعلومات','تعطيل حسابات الأنظمة'],['تقنية المعلومات','إلغاء صلاحيات البرامج'],['تقنية المعلومات','إلغاء VPN'],['تقنية المعلومات','إلغاء صلاحيات الملفات المشتركة'],['تقنية المعلومات','نقل ملكية الملفات والحسابات'],['تقنية المعلومات','تغيير كلمات المرور المشتركة عند الحاجة'],
+['العهد','استلام الكمبيوتر / اللابتوب'],['العهد','استلام الهاتف'],['العهد','استلام شريحة الاتصال'],['العهد','استلام مفاتيح المكتب'],['العهد','استلام السيارة / المركبة'],['العهد','استلام المعدات والأدوات'],['العهد','استلام الملفات والمستندات'],
+['المالية','مراجعة السلف'],['المالية','مراجعة العهد المالية'],['المالية','مراجعة الخصومات'],['المالية','احتساب المستحقات حتى آخر يوم عمل'],['المالية','احتساب رصيد الإجازات المستحق'],['المالية','احتساب مستحقات نهاية الخدمة'],['المالية','اعتماد المخالصة النهائية'],['المالية','صرف المستحقات'],
+['الإدارة المباشرة','استلام الملفات'],['الإدارة المباشرة','استلام الأعمال والمهام'],['الإدارة المباشرة','استلام الأعمال غير المكتملة'],['الإدارة المباشرة','استلام بيانات العملاء / الموردين'],['الإدارة المباشرة','تسليم المهام للموظف البديل'],
+['الأمن','إبلاغ الأمن بانتهاء الخدمة'],['الأمن','استلام بطاقة الدخول'],['الأمن','استلام المفاتيح'],['الأمن','التأكد من إلغاء صلاحيات الأبواب'],
+['الإجراء النهائي','استكمال جميع توقيعات إخلاء الطرف'],['الإجراء النهائي','التأكد من إلغاء البصمة'],['الإجراء النهائي','التأكد من إلغاء الحسابات الإلكترونية'],['الإجراء النهائي','التأكد من تسوية جميع العهد'],['الإجراء النهائي','التأكد من تسوية المستحقات'],['الإجراء النهائي','إصدار شهادة الخبرة'],['الإجراء النهائي','أرشفة كامل ملف إنهاء الخدمة'],['الإجراء النهائي','اعتماد إغلاق ملف الموظف']
+];
+let current=null;
+const key='hr_exit_service_records_v1';
+const sections=[...new Set(tasks.map(x=>x[0]))];
+function blankTask(){return tasks.map(([section,title])=>({section,title,status:'لم يتم',date:'',owner:'',note:''}))}
+function newEmployee(){current={id:crypto.randomUUID(),name:'',empNo:'',job:'',dept:'',manager:'',startDate:'',type:'استقالة',requestDate:'',lastDate:'',hr:'',processDate:new Date().toISOString().slice(0,10),fileStatus:'قيد الإجراء',notes:'',fingerDate:'',fingerTime:'',fingerBy:'',doors:'لا',cardAccess:'لا',lastAccess:'لا',tasks:blankTask(),updatedAt:new Date().toISOString()};loadForm();showView('employee',document.querySelectorAll('.tab')[1]);}
+function records(){return JSON.parse(localStorage.getItem(key)||'[]')}
+function setRecords(v){localStorage.setItem(key,JSON.stringify(v))}
+function saveCurrent(){if(!current){newEmployee();return}readForm();current.updatedAt=new Date().toISOString();let a=records(),i=a.findIndex(x=>x.id===current.id);if(i<0)a.push(current);else a[i]=current;setRecords(a);renderAll();alert('تم حفظ ملف إنهاء الخدمة بنجاح');}
+function readForm(){const ids=['name','empNo','job','dept','manager','startDate','type','requestDate','lastDate','hr','processDate','fileStatus','notes','fingerDate','fingerTime','fingerBy','doors','cardAccess','lastAccess'];ids.forEach(id=>current[id]=document.getElementById(id).value)}
+function loadForm(){if(!current)return;['name','empNo','job','dept','manager','startDate','type','requestDate','lastDate','hr','processDate','fileStatus','notes','fingerDate','fingerTime','fingerBy','doors','cardAccess','lastAccess'].forEach(id=>document.getElementById(id).value=current[id]||'');document.getElementById('recordId').textContent='رقم الملف: '+current.id.slice(0,8)}
+function loadRecord(id){current=records().find(x=>x.id===id);loadForm();renderTasks();showView('employee',document.querySelectorAll('.tab')[1])}
+function showView(id,btn){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');renderAll()}
+function calc(r){let done=r.tasks.filter(t=>t.status==='تم').length, total=r.tasks.length;return {done,total,pct:Math.round(done/total*100),complete:done===total}}
+function statusBadge(r){let c=calc(r);return c.complete?'<span class="status done">مكتمل</span>':'<span class="status pending">قيد الإجراء</span>'}
+function renderDashboard(){let a=records(),total=a.reduce((s,r)=>s+r.tasks.length,0),done=a.reduce((s,r)=>s+calc(r).done,0);mEmployees.textContent=a.length;mComplete.textContent=a.filter(r=>calc(r).complete).length;mPending.textContent=a.filter(r=>!calc(r).complete).length;mTasks.textContent=total;mPercent.textContent=(total?Math.round(done/total*100):0)+'%';dashRows.innerHTML=a.length?a.map(r=>{let c=calc(r);return '<tr><td>'+esc(r.name||'بدون اسم')+'</td><td>'+esc(r.type)+'</td><td>'+esc(r.lastDate||'-')+'</td><td><div class="progress"><div class="bar" style="width:'+c.pct+'%"></div></div><div class="small">'+c.done+'/'+c.total+' ('+c.pct+'%)</div></td><td>'+statusBadge(r)+'</td><td class="no-print"><button class="gray" onclick="loadRecord(\''+r.id+'\')">فتح</button> <button class="red" onclick="deleteRecord(\''+r.id+'\')">حذف</button></td></tr>'}).join(''):'<tr><td colspan="6" class="empty">لا توجد ملفات محفوظة.</td></tr>';sections.innerHTML=sections.map(s=>{let arr=a.flatMap(r=>r.tasks.filter(t=>t.section===s)),d=arr.filter(t=>t.status==='تم').length,p=arr.length?Math.round(d/arr.length*100):0;return '<div style="margin:14px 0"><div style="display:flex;justify-content:space-between"><b>'+s+'</b><span class="small">'+d+'/'+arr.length+' — '+p+'%</span></div><div class="progress"><div class="bar" style="width:'+p+'%"></div></div></div>'}).join('')||'<div class="empty">لا توجد بيانات.</div>'}
+function renderTasks(){if(!current)return;taskRows.innerHTML=current.tasks.map((t,i)=>'<tr><td>'+(i+1)+'</td><td><b>'+esc(t.section)+'</b></td><td>'+esc(t.title)+'</td><td><select onchange="taskChange('+i+',this.value)"><option '+(t.status==='لم يتم'?'selected':'')+'>لم يتم</option><option '+(t.status==='تم'?'selected':'')+'>تم</option><option '+(t.status==='غير مطلوب'?'selected':'')+'>غير مطلوب</option></select></td><td><input type="date" value="'+(t.date||'')+'" onchange="taskField('+i+',\'date\',this.value)"></td><td><input value="'+escAttr(t.owner||'')+'" onchange="taskField('+i+',\'owner\',this.value)"></td><td><input value="'+escAttr(t.note||'')+'" onchange="taskField('+i+',\'note\',this.value)"></td></tr>').join('');renderProgress()}
+function taskChange(i,v){current.tasks[i].status=v;renderTasks();renderProgress();autoSave()}
+function taskField(i,k,v){current.tasks[i][k]=v;autoSave()}
+function markAll(v){if(!current){alert('افتح أو أنشئ ملف موظف أولاً');return}current.tasks.forEach(t=>t.status=v);renderTasks();autoSave()}
+function renderProgress(){if(!current)return;let c=calc(current);progressBox.innerHTML='<div class="'+(c.complete?'notice success':'notice')+'"><b>'+(c.complete?'🟢 إخلاء الطرف مكتمل':'🔴 إخلاء الطرف غير مكتمل')+'</b> — '+c.done+' من '+c.total+' مهام ('+c.pct+'%)<div class="progress" style="margin-top:10px"><div class="bar" style="width:'+c.pct+'%"></div></div></div>'}
+function autoSave(){if(!current)return;current.updatedAt=new Date().toISOString();let a=records(),i=a.findIndex(x=>x.id===current.id);if(i<0)a.push(current);else a[i]=current;setRecords(a);renderDashboard();renderRecords()}
+function renderRecords(){let a=records();recordsList.innerHTML=a.length?a.map(r=>{let c=calc(r);return '<div class="card" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b>'+esc(r.name||'بدون اسم')+'</b> — '+esc(r.empNo||'بدون رقم')+'<div class="small">'+esc(r.type)+' | آخر يوم: '+esc(r.lastDate||'-')+' | آخر تحديث: '+new Date(r.updatedAt).toLocaleString('ar-SA')+'</div></div><div class="actions-mini"><button class="gray" onclick="loadRecord(\''+r.id+'\')">فتح</button><button class="red" onclick="deleteRecord(\''+r.id+'\')">حذف</button></div></div><div style="margin-top:10px"><div class="progress"><div class="bar" style="width:'+c.pct+'%"></div></div><span class="small">'+c.pct+'%</span></div></div>'}).join(''):'<div class="empty">لا توجد سجلات محفوظة.</div>'}
+function deleteRecord(id){if(!confirm('هل تريد حذف ملف إنهاء الخدمة؟'))return;setRecords(records().filter(r=>r.id!==id));if(current?.id===id)current=null;renderAll()}
+function deleteAll(){if(confirm('سيتم حذف جميع السجلات المحفوظة من هذا المتصفح. هل أنت متأكد؟')){localStorage.removeItem(key);current=null;renderAll()}}
+function renderAll(){renderDashboard();renderRecords();renderTasks()}
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}function escAttr(s){return esc(s).replace(/'/g,'&#39;')}
+renderAll();if(!current)newEmployee();
+</script>
+</body></html>
